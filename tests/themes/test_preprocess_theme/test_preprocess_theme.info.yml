@@ -1,0 +1,6 @@
+name: 'Test preprocess theme'
+type: theme
+description: 'Theme for testing theme-provided preprocessors'
+version: VERSION
+base theme: classy
+core: 8.x
