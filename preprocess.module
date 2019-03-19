@@ -5,7 +5,16 @@
  * Handles preprocessing of all theme hooks implemented as templates.
  */
 
-use Drupal\Core\Form\FormStateInterface;
+/**
+ * Implements hook_help().
+ */
+function preprocess_help($path, array $arg): string {
+  if ($path !== 'admin/help#preprocess') {
+    return '';
+  }
+
+  return '<pre>' . file_get_contents(__DIR__ . '/README.md') . '</pre>';
+}
 
 /**
  * Implements hook_preprocess().

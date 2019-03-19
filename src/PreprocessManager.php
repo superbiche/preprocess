@@ -2,8 +2,6 @@
 
 namespace Drupal\preprocess;
 
-use Drupal\Core\Render\Element;
-
 /**
  * Manages preprocessing.
  *
