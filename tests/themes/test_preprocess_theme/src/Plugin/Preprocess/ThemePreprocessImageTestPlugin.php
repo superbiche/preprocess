@@ -7,7 +7,7 @@ use Drupal\preprocess\PreprocessPluginBase;
 /**
  * Test preprocessor provided by theme.
  */
-class ThemePreprocessTestPlugin extends PreprocessPluginBase {
+class ThemePreprocessImageTestPlugin extends PreprocessPluginBase {
 
   /**
    * {@inheritdoc}

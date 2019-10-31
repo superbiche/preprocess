@@ -4,4 +4,4 @@ services:
     arguments: ['@container.namespaces', '@cache.discovery', '@module_handler', '@theme_handler', '@theme.manager']
   preprocess.manager:
     class: Drupal\preprocess\PreprocessManager
-    arguments: ['@preprocess.plugin.manager']
+    arguments: ['@preprocess.plugin.manager', '@theme.registry', '@module_handler', '@theme.manager']

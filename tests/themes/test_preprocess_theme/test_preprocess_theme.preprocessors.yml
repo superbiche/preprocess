@@ -1,3 +1,7 @@
-test_preprocess_theme.preprocessor:
-  class: \Drupal\test_preprocess_theme\Plugin\Preprocess\ThemePreprocessTestPlugin
+test_preprocess_theme_image.preprocessor:
+  class: \Drupal\test_preprocess_theme\Plugin\Preprocess\ThemePreprocessImageTestPlugin
   hook: image
+
+test_preprocess_theme_node__article.preprocessor:
+  class: \Drupal\test_preprocess_theme\Plugin\Preprocess\ThemePreprocessNodeArticleTestPlugin
+  hook: node__article

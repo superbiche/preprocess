@@ -12,6 +12,11 @@ use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
 use Drupal\Core\Plugin\Discovery\ContainerDerivativeDiscoveryDecorator;
 use Drupal\Core\Plugin\Discovery\YamlDiscoveryDecorator;
 use Drupal\Core\Theme\ThemeManagerInterface;
+use Traversable;
+use function array_filter;
+use function array_merge;
+use function strcmp;
+use function uasort;
 
 /**
  * Manages @Preprocess plugins.
@@ -49,7 +54,7 @@ class PreprocessPluginManager extends DefaultPluginManager implements Preprocess
    * @param \Drupal\Core\Theme\ThemeManagerInterface $theme_manager
    *   The theme manager.
    */
-  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, ThemeHandlerInterface $theme_handler, ThemeManagerInterface $theme_manager) {
+  public function __construct(Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, ThemeHandlerInterface $theme_handler, ThemeManagerInterface $theme_manager) {
     parent::__construct('Plugin/Preprocess', $namespaces, $module_handler, PreprocessInterface::class, Preprocess::class);
     $this->setCacheBackend($cache_backend, 'preprocess_plugins');
     $this->themeHandler = $theme_handler;
@@ -111,7 +116,7 @@ class PreprocessPluginManager extends DefaultPluginManager implements Preprocess
     }
 
     /** @var \Drupal\Component\Plugin\Definition\PluginDefinitionInterface[] $definitions */
-    $definitions = \array_filter($this->getDefinitions(), function ($definition) use ($hook) {
+    $definitions = array_filter($this->getDefinitions(), static function ($definition) use ($hook) {
       return $definition['hook'] === $hook;
     });
 
@@ -143,7 +148,7 @@ class PreprocessPluginManager extends DefaultPluginManager implements Preprocess
   protected function getDiscovery(): DiscoveryInterface {
     if (!$this->discovery) {
       $discovery = new AnnotatedClassDiscovery($this->subdir, $this->namespaces, $this->pluginDefinitionAnnotationName, $this->additionalAnnotationNamespaces);
-      $discovery = new YamlDiscoveryDecorator($discovery, 'preprocessors', \array_merge($this->moduleHandler->getModuleDirectories(), $this->themeHandler->getThemeDirectories()));
+      $discovery = new YamlDiscoveryDecorator($discovery, 'preprocessors', array_merge($this->moduleHandler->getModuleDirectories(), $this->themeHandler->getThemeDirectories()));
       $discovery = new ContainerDerivativeDiscoveryDecorator($discovery);
       $this->discovery = $discovery;
     }

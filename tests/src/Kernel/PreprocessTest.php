@@ -2,23 +2,30 @@
 
 namespace Drupal\Tests\preprocess\Kernel;
 
+use Drupal\KernelTests\Core\Entity\EntityKernelTestBase;
+use Drupal\node\Entity\Node;
+use Drupal\node\Entity\NodeType;
 use Drupal\preprocess\PreprocessInterface;
 use Drupal\Core\Theme\MissingThemeDependencyException;
-use Drupal\KernelTests\KernelTestBase;
+use Drupal\user\Entity\User;
 use Exception;
+use function array_diff;
+use function array_key_exists;
+use function array_map;
+use function array_merge;
 
 /**
  * Tests Preprocess functionality.
  *
  * @group Preprocess
  */
-class PreprocessTest extends KernelTestBase {
+class PreprocessTest extends EntityKernelTestBase {
 
   /**
    * {@inheritdoc}
    */
   public static $modules = [
-    'system',
+    'node',
     'preprocess',
     'preprocess_test',
   ];
@@ -29,6 +36,20 @@ class PreprocessTest extends KernelTestBase {
    * @var \Drupal\preprocess\PreprocessPluginManagerInterface
    */
   private $preprocessPluginManager;
+
+  /**
+   * The article node.
+   *
+   * @var \Drupal\node\NodeInterface
+   */
+  protected $articleNode;
+
+  /**
+   * The node view builder.
+   *
+   * @var \Drupal\Core\Entity\EntityViewBuilderInterface
+   */
+  protected $nodeViewBuilder;
 
   /**
    * The theme manager.
@@ -52,8 +73,17 @@ class PreprocessTest extends KernelTestBase {
     $this->preprocessPluginManager = $this->container->get('preprocess.plugin.manager');
     $this->themeManager = $this->container->get('theme.manager');
     $this->themeInitializer = $this->container->get('theme.initialization');
+    $this->nodeViewBuilder = $this->container->get('entity_type.manager')->getViewBuilder('node');
     $this->container->get('theme_installer')->install(['test_preprocess_theme']);
-    $this->installConfig(['system']);
+
+    $type = NodeType::create([
+      'type' => 'article',
+      'name' => 'Article',
+    ]);
+    $type->save();
+
+    $this->installSchema('node', 'node_access');
+    $this->installConfig(['system', 'node']);
     $this->config('system.theme')->set('default', 'test_preprocess_theme')->save();
   }
 
@@ -79,7 +109,7 @@ class PreprocessTest extends KernelTestBase {
     }
 
     $this->themeManager->setActiveTheme($active_theme);
-    self::assertSame($expected, \array_key_exists($plugin_id, $this->preprocessPluginManager->getDefinitions()));
+    self::assertSame($expected, array_key_exists($plugin_id, $this->preprocessPluginManager->getDefinitions()));
   }
 
   /**
@@ -94,11 +124,11 @@ class PreprocessTest extends KernelTestBase {
    */
   public function testGetPreprocessors(string $hook, array $expected_plugin_ids): void {
     $preprocessors = $this->preprocessPluginManager->getPreprocessors($hook);
-    $plugin_ids = \array_map(function (PreprocessInterface $preprocessor) {
+    $plugin_ids = array_map(static function (PreprocessInterface $preprocessor) {
       return $preprocessor->getPluginId();
     }, $preprocessors);
 
-    $diff = \array_merge(\array_diff($plugin_ids, $expected_plugin_ids), \array_diff($expected_plugin_ids, $plugin_ids));
+    $diff = array_merge(array_diff($plugin_ids, $expected_plugin_ids), array_diff($expected_plugin_ids, $plugin_ids));
     self::assertEmpty($diff);
   }
 
@@ -124,12 +154,38 @@ class PreprocessTest extends KernelTestBase {
   }
 
   /**
+   * Test node preprocessing.
+   */
+  public function testNodePreprocess(): void {
+    $account = User::create([
+      'name' => $this->randomString(),
+    ]);
+    $account->save();
+
+    $node = Node::create([
+      'type' => 'article',
+      'title' => $this->randomMachineName(),
+      'uid' => $account->id(),
+    ]);
+    $node->save();
+
+    $build = $this->nodeViewBuilder->view($node);
+    $this->render($build);
+    $this->assertRaw('Hello world.', $this->getRawContent());
+  }
+
+  /**
    * Data provider for testDiscovery().
    */
   public function discoveryData(): array {
     return [
-      'preprocessor_theme_test_theme' => [
-        'test_preprocess_theme.preprocessor',
+      'preprocessor_theme_test_image' => [
+        'test_preprocess_theme_image.preprocessor',
+        'test_preprocess_theme',
+        TRUE,
+      ],
+      'preprocessor_theme_test_node__article' => [
+        'test_preprocess_theme_node__article.preprocessor',
         'test_preprocess_theme',
         TRUE,
       ],
@@ -162,7 +218,11 @@ class PreprocessTest extends KernelTestBase {
       ],
       'hook_preprocess_image' => [
         'image',
-        ['test_preprocess_theme.preprocessor'],
+        ['test_preprocess_theme_image.preprocessor'],
+      ],
+      'hook_preprocess_node__article' => [
+        'node__article',
+        ['test_preprocess_theme_node__article.preprocessor'],
       ],
       'hook_preprocess_fake_hook' => [
         'fake_hook',
